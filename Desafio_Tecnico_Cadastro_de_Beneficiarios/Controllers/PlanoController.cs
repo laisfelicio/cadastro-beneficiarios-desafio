@@ -38,6 +38,41 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Controllers
             return CreatedAtAction(nameof(EditarPlano), new { id = plano.Dados.Id }, plano);
         }
 
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ListarPlanos()
+        {
+            var planos = await _planoInterface.ListarPlanos();
+
+            if (!planos.Status)
+                return StatusCode(StatusCodes.Status500InternalServerError, planos);
+
+            return Ok(planos);
+        }
+
+                /// <summary>
+        /// Retorna um beneficiário pelo ID
+        /// </summary>
+        [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> Detalhe(int id)
+        {
+            var plano = await _planoInterface.BuscarPlanoPorId(id);
+
+            if (!plano.Status)
+            {
+                if (plano.Error == "ValidationError")
+                    return NotFound(plano);
+
+                return StatusCode(StatusCodes.Status500InternalServerError, plano);
+            }
+
+            return Ok(plano);
+        }
+
         /// <summary>
         /// Edita um plano existente
         /// </summary>

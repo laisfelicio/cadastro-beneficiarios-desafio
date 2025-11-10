@@ -2,6 +2,7 @@ using AutoMapper;
 using Desafio_Tecnico_Cadastro_de_Beneficiarios.Data;
 using Desafio_Tecnico_Cadastro_de_Beneficiarios.Dto.Plano;
 using Desafio_Tecnico_Cadastro_de_Beneficiarios.Models;
+using Desafio_Tecnico_Cadastro_de_Beneficiarios.Repositories.Interface;
 using Desafio_Tecnico_Cadastro_de_Beneficiarios.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,11 +12,14 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
     {
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IPlanoRepository _planoRepository;
 
-        public PlanoService(AppDbContext context, IMapper mapper)
+
+        public PlanoService(AppDbContext context, IMapper mapper, IPlanoRepository planoRepository)
         {
             _context = context;
             _mapper = mapper;
+            _planoRepository = planoRepository;
         }
 
         public async Task<ResponseModel<PlanoModel>> CriarPlano(PlanoCriacaoDto planoCriacaoDto)
@@ -24,7 +28,7 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
 
             try
             {
-                if (PlanoExiste(planoCriacaoDto))
+                if (_planoRepository.ExistePlano(planoCriacaoDto))
                 {
                     response.Status = false;
                     response.Error = "ValidationError";
@@ -38,15 +42,69 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
                     return response;
                 }
 
-                PlanoModel plano = _mapper.Map<PlanoModel>(planoCriacaoDto);
+                var planoComBeneficiarios = await _planoRepository.CriarPlano(planoCriacaoDto);
 
-                _context.Add(plano);
-                await _context.SaveChangesAsync();
-
-                var planoComBeneficiarios = await _context.Planos.Include(p => p.Beneficiarios).FirstOrDefaultAsync(p => p.Id == plano.Id);
                 response.Dados = planoComBeneficiarios;
                 response.Mensagem = "Plano criado com sucesso";
                 return response;
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Error = "ServerError";
+                response.Mensagem = ex.Message;
+                return response;
+            }
+            
+        }
+
+        public async Task<ResponseModel<List<PlanoModel>>> ListarPlanos()
+        {
+            ResponseModel<List<PlanoModel>> response = new ResponseModel<List<PlanoModel>>();
+
+            try
+            {
+                var beneficiarios = await _planoRepository.ListarPlanos();
+
+                response.Dados = beneficiarios;
+                response.Mensagem = "Planos listados com sucesso";
+                return response;
+
+
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Error = "ServerError";
+                response.Mensagem = ex.Message;
+                return response;
+            }
+        }
+        public async Task<ResponseModel<PlanoModel>> BuscarPlanoPorId(int id)
+        {
+            ResponseModel<PlanoModel> response = new ResponseModel<PlanoModel>();
+
+            try
+            {
+                var plano = await _planoRepository.BuscarPlanoPorId(id);
+
+                if (plano == null)
+                {
+                    response.Status = false;
+                    response.Error = "ValidationError";
+                    response.Mensagem = "Plano não localizado";
+                    response.Details.Add(new ValidacaoModel
+                    {
+                        Field = "id",
+                        Rule = "not_found"
+                    });
+
+                    return response;
+                }
+                response.Dados = plano;
+                response.Mensagem = "Beneficiário localizado com sucesso";
+                return response;
+
             }
             catch (Exception ex)
             {
@@ -63,7 +121,7 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
 
             try
             {
-                var plano = await _context.Planos.FindAsync(id);
+                var plano = await _planoRepository.BuscarPlanoPorId(id);
 
                 if (plano == null)
                 {
@@ -78,11 +136,9 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
                     return response;
 
                 }
-                response.Dados = plano;
+                response.Dados = await _planoRepository.DeletarPlano(id);
                 response.Mensagem = "Plano removido com sucesso";
 
-                _context.Planos.Remove(plano);
-                await _context.SaveChangesAsync();
 
                 return response;
             }
@@ -101,7 +157,7 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
 
             try
             {
-                var PlanoBanco = _context.Planos.Find(planoEdicaoDto.Id);
+                var PlanoBanco = await _planoRepository.BuscarPlanoPorId(planoEdicaoDto.Id);
 
                 if (PlanoBanco == null)
                 {
@@ -116,14 +172,7 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
                     return response;
                 }
 
-                PlanoBanco.Nome = planoEdicaoDto.Nome;
-                PlanoBanco.Codigo_registro_ans = planoEdicaoDto.Codigo_registro_ans;
-
-                _context.Planos.Update(PlanoBanco);
-                await _context.SaveChangesAsync();
-
-                var planoAtualizado = await _context.Planos.Include(p => p.Beneficiarios).FirstOrDefaultAsync(p => p.Id == PlanoBanco.Id);
-                response.Dados = planoAtualizado;
+                response.Dados = await _planoRepository.EditarPlano(planoEdicaoDto);
                 response.Mensagem = "Plano editado com sucesso";
                 return response;
 
@@ -135,11 +184,6 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
                 response.Mensagem = ex.Message;
                 return response;
             }
-        }
-
-        public bool PlanoExiste(PlanoCriacaoDto planoCriacaoDto)
-        {
-            return _context.Planos.Any(item => item.Nome == planoCriacaoDto.Nome);
         }
     }
 }

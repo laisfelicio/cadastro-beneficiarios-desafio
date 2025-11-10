@@ -8,5 +8,7 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services.Interface
         Task<ResponseModel<PlanoModel>> CriarPlano(PlanoCriacaoDto planoCriacaoDto);
         Task<ResponseModel<PlanoModel>> EditarPlano(PlanoEdicaoDto planoEdicaoDto);
         Task<ResponseModel<PlanoModel>> DeletarPlano(int id);
+        Task<ResponseModel<PlanoModel>> BuscarPlanoPorId(int id);
+       Task<ResponseModel<List<PlanoModel>>> ListarPlanos();
     }
 }

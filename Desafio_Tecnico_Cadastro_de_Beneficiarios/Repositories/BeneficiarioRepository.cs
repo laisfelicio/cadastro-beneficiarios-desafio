@@ -3,22 +3,63 @@ using Desafio_Tecnico_Cadastro_de_Beneficiarios.Data;
 using Desafio_Tecnico_Cadastro_de_Beneficiarios.Dto.Beneficiario;
 using Desafio_Tecnico_Cadastro_de_Beneficiarios.Models;
 using Desafio_Tecnico_Cadastro_de_Beneficiarios.Repositories.Interface;
-using Desafio_Tecnico_Cadastro_de_Beneficiarios.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 
-namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
+namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Repositories
 {
-    public class BeneficiarioService : IBeneficiarioInterface
+    public class BeneficiarioRepository : IBeneficiarioRepository
     {
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;
-        private readonly IBeneficiarioRepository _beneficiarioRepository;
 
-        public BeneficiarioService(AppDbContext context, IMapper mapper, IBeneficiarioRepository beneficiarioRepository)
+        public BeneficiarioRepository(AppDbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
-            _beneficiarioRepository = beneficiarioRepository;
+        }
+
+        public async Task<ResponseModel<BeneficiarioModel>> CriarBeneficiario(BeneficiarioCriacaoDto beneficiarioCriacaoDto)
+        {
+            ResponseModel<BeneficiarioModel> response = new ResponseModel<BeneficiarioModel>();
+
+            try
+            {
+                if (BeneficiarioExiste(beneficiarioCriacaoDto))
+                {
+                    response.Status = false;
+                    response.Error = "ValidationError";
+                    response.Mensagem = "Beneficiário já criado";
+                    response.Details.Add(new ValidacaoModel
+                    {
+                        Field = "CPF",
+                        Rule = "Já utilizado"
+                    });
+
+                    return response;
+                }
+
+                BeneficiarioModel beneficiario = _mapper.Map<BeneficiarioModel>(beneficiarioCriacaoDto);
+
+                _context.Add(beneficiario);
+                await _context.SaveChangesAsync();
+
+                
+                response.Dados = beneficiario;
+                response.Mensagem = "Beneficiário criado com sucesso";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Error = "ServerError";
+                response.Mensagem = ex.Message;
+                return response;
+            }
+        }
+
+        public bool BeneficiarioExiste(BeneficiarioCriacaoDto beneficiarioCriacaoDto)
+        {
+            return _context.Beneficiarios.Any(item => item.Cpf == beneficiarioCriacaoDto.Cpf);
         }
 
         public async Task<ResponseModel<BeneficiarioModel>> BuscarBeneficiariosPorId(int id)

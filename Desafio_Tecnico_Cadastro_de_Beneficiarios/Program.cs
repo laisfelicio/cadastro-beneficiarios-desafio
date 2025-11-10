@@ -6,6 +6,8 @@ using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using Desafio_Tecnico_Cadastro_de_Beneficiarios.Repositories;
+using Desafio_Tecnico_Cadastro_de_Beneficiarios.Repositories.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,10 +28,15 @@ builder.Services.AddControllers();
 
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddAutoMapper(typeof(PlanoProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(BeneficiarioProfile).Assembly);
+
 builder.Services.AddScoped<IPlanoInterface, PlanoService>();
 builder.Services.AddScoped<IBeneficiarioInterface, BeneficiarioService>();
 
-builder.Services.AddAutoMapper(typeof(PlanoProfile).Assembly);
+builder.Services.AddScoped<IPlanoRepository, PlanoRepository>();
+builder.Services.AddScoped<IBeneficiarioRepository, BeneficiarioRepository>();
+
 
 var app = builder.Build();
 
