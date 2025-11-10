@@ -32,6 +32,28 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Controllers
             return Ok(beneficiario);
         }
 
+                /// <summary>
+        /// Criar Plano
+        /// </summary>
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CriarBeneficiario([FromBody] BeneficiarioCriacaoDto beneficiarioCriacaoDto)
+        {
+            var beneficiario = await _beneficiarioInterface.CriarBeneficiario(beneficiarioCriacaoDto);
+
+            if (!beneficiario.Status)
+            {
+                if (beneficiario.Error == "ValidationError")
+                    return Conflict(beneficiario);
+
+                return StatusCode(StatusCodes.Status500InternalServerError, beneficiario);
+            }
+
+            return CreatedAtAction(nameof(CriarBeneficiario), new { id = beneficiario.Dados.Id }, beneficiario);
+        }
+
         /// <summary>
         /// Retorna um beneficiário pelo ID
         /// </summary>

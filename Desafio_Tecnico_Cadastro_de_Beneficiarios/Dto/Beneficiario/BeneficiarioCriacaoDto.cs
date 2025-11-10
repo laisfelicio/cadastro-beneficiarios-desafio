@@ -15,5 +15,6 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Dto.Beneficiario
         [Required(ErrorMessage = "A data de nascimento é obrigatória")]
         public DateTime DataNascimento { get; set; }
         public Status Status { get; set; } 
+        public int PlanoId { get; set; }
     }
 }

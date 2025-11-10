@@ -21,13 +21,52 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
             _beneficiarioRepository = beneficiarioRepository;
         }
 
+        public async Task<ResponseModel<BeneficiarioModel>> CriarBeneficiario(BeneficiarioCriacaoDto beneficiarioCriacaoDto)
+        {
+            ResponseModel<BeneficiarioModel> response = new ResponseModel<BeneficiarioModel>();
+
+            try
+            {
+                if (_beneficiarioRepository.BeneficiarioExiste(beneficiarioCriacaoDto))
+                {
+                    response.Status = false;
+                    response.Error = "ValidationError";
+                    response.Mensagem = "Beneficiário já criado";
+                    response.Details.Add(new ValidacaoModel
+                    {
+                        Field = "CPF",
+                        Rule = "Já utilizado"
+                    });
+
+                    return response;
+                }
+
+                BeneficiarioModel beneficiario = _mapper.Map<BeneficiarioModel>(beneficiarioCriacaoDto);
+
+                _context.Add(beneficiario);
+                await _context.SaveChangesAsync();
+
+
+                response.Dados = beneficiario;
+                response.Mensagem = "Beneficiário criado com sucesso";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Status = false;
+                response.Error = "ServerError";
+                response.Mensagem = ex.Message;
+                return response;
+            }
+        }
+
         public async Task<ResponseModel<BeneficiarioModel>> BuscarBeneficiariosPorId(int id)
         {
             ResponseModel<BeneficiarioModel> response = new ResponseModel<BeneficiarioModel>();
 
             try
             {
-                var beneficiario = await _context.Beneficiarios.FindAsync(id);
+                var beneficiario = await _beneficiarioRepository.BuscarBeneficiariosPorId(id);
 
                 if(beneficiario == null)
                 {
@@ -62,9 +101,9 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
 
             try
             {
-                var beneficiario = await _context.Beneficiarios.FindAsync(id);
+                var beneficiario = await _beneficiarioRepository.BuscarBeneficiariosPorId(id);
 
-                if(beneficiario == null)
+                if (beneficiario == null)
                 {
                     response.Status = false;
                     response.Error = "ValidationError";
@@ -77,11 +116,9 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
                     return response;
                 }
 
+                await _beneficiarioRepository.DeletarBeneficiario(id);
                 response.Dados = beneficiario;
                 response.Mensagem = "Beneficiário removido com sucesso";
-
-                _context.Beneficiarios.Remove(beneficiario);
-                await _context.SaveChangesAsync();
 
                 return response;
 
@@ -101,7 +138,7 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
 
             try
             {
-                var beneficiarioBanco = await _context.Beneficiarios.FindAsync(beneficiarioEdicaoDto.Id);
+                var beneficiarioBanco = await _beneficiarioRepository.BuscarBeneficiariosPorId(beneficiarioEdicaoDto.Id);
 
                 if (beneficiarioBanco == null)
                 {
@@ -116,15 +153,8 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
 
                     return response;
                 }
-                beneficiarioBanco.NomeCompleto = beneficiarioEdicaoDto.NomeCompleto;
-                beneficiarioBanco.Cpf = beneficiarioEdicaoDto.Cpf;
-                beneficiarioBanco.DataNascimento = beneficiarioEdicaoDto.DataNascimento;
-                beneficiarioBanco.Status = beneficiarioEdicaoDto.Status;
-
-                _context.Update(beneficiarioBanco);
-                await _context.SaveChangesAsync();
                 
-                response.Dados = beneficiarioBanco;
+                response.Dados = await _beneficiarioRepository.EditarBeneficiarios(beneficiarioEdicaoDto);
                 response.Mensagem = "Beneficiário editado com sucesso";
                 return response;
             }
@@ -143,7 +173,7 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Services
 
             try
             {
-                var beneficiarios = await _context.Beneficiarios.ToListAsync();
+                var beneficiarios = await _beneficiarioRepository.ListarBeneficiarios();
 
                 response.Dados = beneficiarios;
                 response.Mensagem = "Beneficiários listados com sucesso";

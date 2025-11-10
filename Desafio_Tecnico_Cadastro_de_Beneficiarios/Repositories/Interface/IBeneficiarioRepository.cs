@@ -5,10 +5,11 @@ namespace Desafio_Tecnico_Cadastro_de_Beneficiarios.Repositories.Interface
 {
     public interface IBeneficiarioRepository
     {
-        Task<ResponseModel<BeneficiarioModel>> CriarBeneficiario(BeneficiarioCriacaoDto beneficiarioCriacaoDto);
-        Task<ResponseModel<List<BeneficiarioModel>>> ListarBeneficiarios();
-        Task<ResponseModel<BeneficiarioModel>> BuscarBeneficiariosPorId(int id);
-        Task<ResponseModel<BeneficiarioModel>> EditarBeneficiarios(BeneficiarioEdicaoDto beneficiarioEdicaoDto);
-        Task<ResponseModel<BeneficiarioModel>> DeletarBeneficiario(int id);
+        Task<BeneficiarioModel> CriarBeneficiario(BeneficiarioCriacaoDto beneficiarioCriacaoDto);
+        Task<List<BeneficiarioModel>> ListarBeneficiarios();
+        Task<BeneficiarioModel> BuscarBeneficiariosPorId(int id);
+        Task<BeneficiarioModel> EditarBeneficiarios(BeneficiarioEdicaoDto beneficiarioEdicaoDto);
+        Task<BeneficiarioModel> DeletarBeneficiario(int id);
+        bool BeneficiarioExiste(BeneficiarioCriacaoDto beneficiarioCriacaoDto);
     }
 }
